@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Marker, InfoWindow, DirectionsService, DirectionsRenderer } from '@react-google-maps/api';
-import crimeData from '../data/cleaned_crime_data_no_block.json';
+import crimeData from '../cleaned_crime_data.json';
 
 const GOOGLE_MAPS_API_KEY = 'AIzaSyDni3sJh5FsQqwXEduYDypt7swK5YQq8SA';
 

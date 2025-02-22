@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { GoogleMap, Marker, Autocomplete, LoadScript } from '@react-google-maps/api';
 import './App.css';
-import CrimeMap from './CrimeMap';
+import CrimeMap from './components/CrimeMap';
 
 const WEATHER_API_URL = "https://api.weather.gov/points/43.0731,-89.4012";
 const GOOGLE_MAPS_API_KEY = 'AIzaSyDni3sJh5FsQqwXEduYDypt7swK5YQq8SA';
