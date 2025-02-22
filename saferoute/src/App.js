@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { GoogleMap, Marker, Autocomplete, LoadScript } from '@react-google-maps/api';
+import { GoogleMap, Marker, Autocomplete, LoadScript, DirectionsService, DirectionsRenderer } from '@react-google-maps/api';
 import './App.css';
 import CrimeMap from './components/CrimeMap';
 
@@ -11,6 +11,7 @@ const App = () => {
   const [weather, setWeather] = useState(null);
   const [startLocation, setStartLocation] = useState(null);
   const [destination, setDestination] = useState(null);
+  const [directions, setDirections] = useState(null);
 
   useEffect(() => {
     const fetchWeather = async () => {
@@ -48,6 +49,26 @@ const App = () => {
     }
   };
 
+  const fetchDirections = () => {
+    if (startLocation && destination) {
+      const service = new window.google.maps.DirectionsService();
+      service.route(
+        {
+          origin: startLocation,
+          destination: destination,
+          travelMode: window.google.maps.TravelMode.WALKING,
+        },
+        (result, status) => {
+          if (status === window.google.maps.DirectionsStatus.OK) {
+            setDirections(result);
+          } else {
+            console.error("Error fetching directions:", status);
+          }
+        }
+      );
+    }
+  };
+
   return (
     <LoadScript googleMapsApiKey={GOOGLE_MAPS_API_KEY} libraries={["places"]}>
       <div className="weather-info">
@@ -72,10 +93,12 @@ const App = () => {
         <Autocomplete onLoad={(autocomplete) => autocomplete.addListener("place_changed", () => handlePlaceSelect(autocomplete.getPlace(), setDestination))}>
           <input type="text" placeholder="Enter Destination" />
         </Autocomplete>
+        <button onClick={fetchDirections}>Get Route</button>
       </div>
       <GoogleMap mapContainerClassName="map-container" center={{ lat: 43.0731, lng: -89.4012 }} zoom={12}>
         {startLocation && <Marker position={startLocation} />}
         {destination && <Marker position={destination} />}
+        {directions && <DirectionsRenderer directions={directions} />}
         <CrimeMap startLocation={startLocation} destination={destination} />
       </GoogleMap>
     </LoadScript>
