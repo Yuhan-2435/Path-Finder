@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { createRoot } from 'react-dom/client';
 import { GoogleMap, Marker, Autocomplete, LoadScript, DirectionsRenderer } from '@react-google-maps/api';
 import './App.css';
 import CrimeMap from './components/CrimeMap';
 
-const WEATHER_API_URL = "https://api.weather.gov/points/43.0731,-89.4012";
 const GOOGLE_MAPS_API_KEY = 'AIzaSyDni3sJh5FsQqwXEduYDypt7swK5YQq8SA';
-//const FLASK_API_URL = "http://127.0.0.1:5000/api/data";
+const FLASK_API_URL = "/api/data";
+const WEATHER_API_URL = "https://api.weather.gov/points/43.0731,-89.4012";
 
 const mapStyles = {
   pastel: [
@@ -35,12 +34,73 @@ const mapStyles = {
   ],
 };
 
+
 const App = () => {
   const [weather, setWeather] = useState(null);
   const [startLocation, setStartLocation] = useState(null);
   const [destination, setDestination] = useState(null);
+  const [startCoordinates, setStartCoordinates] = useState(null);
+  const [destinationCoordinates, setDestinationCoordinates] = useState(null);
+  const [routeInfo, setRouteInfo] = useState(null);
   const [directions, setDirections] = useState(null);
+  const [routePath, setRoutePath] = useState([]);  
   const [selectedTheme, setSelectedTheme] = useState("light");
+
+
+  const handlePlaceSelect = (place, setLocation, setCoordinates) => {
+    if (place && place.formatted_address) {
+      setLocation(place.formatted_address);
+      setCoordinates({ lat: place.geometry.location.lat(), lng: place.geometry.location.lng() }); 
+    }
+  };
+
+  const sendRouteRequestToFlask = async () => {
+    if (!startLocation || !destination) {
+      console.error("Both addresses must be selected.");
+      return;
+    }
+
+    try {
+      const response = await fetch(FLASK_API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ start_address: startLocation, destination_address: destination }),
+      });
+
+      const result = await response.json();
+      console.log("Flask Response:", result);
+
+      if (result.route) {
+        setRoutePath(result.route.path);
+        setRouteInfo({ distance: result.route.distance, duration: result.route.duration, alerts: result.route.alerts });
+      }
+    } catch (error) {
+      console.error("Error sending request to Flask:", error);
+    }
+  };
+
+  const fetchDirections = () => {
+    if (!startCoordinates || !destinationCoordinates) {
+      console.error("Start location and destination must be selected.");
+      return;
+    }
+
+    const service = new window.google.maps.DirectionsService();
+    service.route(
+      {
+        origin: startCoordinates,
+        destination: destinationCoordinates,
+        travelMode: window.google.maps.TravelMode.WALKING,
+      },
+      (result, status) => {
+        if (status === window.google.maps.DirectionsStatus.OK) {
+          setDirections(result);
+        } else {
+          console.error("Error fetching directions:", status);
+        }
+      }
+    );
+  };
 
   useEffect(() => {
     const fetchWeather = async () => {
@@ -67,37 +127,6 @@ const App = () => {
     };
     fetchWeather();
   }, []);
-
-  const handlePlaceSelect = (place, setLocation) => {
-    if (place && place.geometry) {
-      const location = {
-        lat: place.geometry.location.lat(),
-        lng: place.geometry.location.lng()
-      };
-      setLocation(location);
-    }
-  };
-
-
-  const fetchDirections = () => {
-    if (startLocation && destination) {
-      const service = new window.google.maps.DirectionsService();
-      service.route(
-        {
-          origin: startLocation,
-          destination: destination,
-          travelMode: window.google.maps.TravelMode.WALKING,
-        },
-        (result, status) => {
-          if (status === window.google.maps.DirectionsStatus.OK) {
-            setDirections(result);
-          } else {
-            console.error("Error fetching directions:", status);
-          }
-        }
-      );
-    }
-  };
 
   return (
     <LoadScript googleMapsApiKey={GOOGLE_MAPS_API_KEY} libraries={["places"]}>
@@ -126,26 +155,40 @@ const App = () => {
       </div>
       <div className="route-input">
         <h3>Enter Start & Destination</h3>
-        <Autocomplete onLoad={(autocomplete) => autocomplete.addListener("place_changed", () => handlePlaceSelect(autocomplete.getPlace(), setStartLocation))}>
+        <Autocomplete onLoad={(autocomplete) => autocomplete.addListener("place_changed", () => handlePlaceSelect(autocomplete.getPlace(), setStartLocation, setStartCoordinates))}>
           <input type="text" placeholder="Enter Start Location" />
         </Autocomplete>
-        <Autocomplete onLoad={(autocomplete) => autocomplete.addListener("place_changed", () => handlePlaceSelect(autocomplete.getPlace(), setDestination))}>
+        <Autocomplete onLoad={(autocomplete) => autocomplete.addListener("place_changed", () => handlePlaceSelect(autocomplete.getPlace(), setDestination, setDestinationCoordinates))}>
           <input type="text" placeholder="Enter Destination" />
         </Autocomplete>
-        <button onClick={fetchDirections}>Get Route</button>
+        <button onClick={sendRouteRequestToFlask}>Get Safe Route</button>
+        <button onClick={fetchDirections}>Show Directions</button>
       </div>
-      <GoogleMap
-        mapContainerClassName="map-container"
+
+      {routeInfo && (
+        <div className="route-info">
+          <h3>Route Information</h3>
+          <p><strong>Start:</strong> {startLocation}</p>
+          <p><strong>Destination:</strong> {destination}</p>
+          <p><strong>Distance:</strong> {routeInfo.distance} meters</p>
+          <p><strong>Duration:</strong> {routeInfo.duration} minutes</p>
+          <p><strong>Alerts:</strong> {routeInfo.alerts.length > 0 ? routeInfo.alerts.join(", ") : "No incidents reported"}</p>
+        </div>
+      )}
+
+      <GoogleMap mapContainerClassName="map-container"
         center={{ lat: 43.0731, lng: -89.4012 }}
         zoom={12}
         options={{
           styles: mapStyles[selectedTheme],
           disableDefaultUI: true,
           zoomControl: true,
-        }}
-      >
-        {startLocation && <Marker position={startLocation} />}
-        {destination && <Marker position={destination} />}
+        }}>
+        {startCoordinates && <Marker position={startCoordinates} />}
+        {destinationCoordinates && <Marker position={destinationCoordinates} />}
+        {routePath.map((point, index) => (
+          <Marker key={index} position={{ lat: point[0], lng: point[1] }} />
+        ))}
         {directions && <DirectionsRenderer directions={directions} />}
         <CrimeMap startLocation={startLocation} destination={destination} />
       </GoogleMap>
@@ -154,4 +197,5 @@ const App = () => {
 };
 
 export default App;
+
 
