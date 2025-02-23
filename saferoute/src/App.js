@@ -12,7 +12,32 @@ const App = () => {
   const [startLocation, setStartLocation] = useState(null);
   const [destination, setDestination] = useState(null);
   const [directions, setDirections] = useState(null);
-
+  const pastelMapStyle = [
+    { elementType: "geometry", stylers: [{ color: "#f3e5f5" }] },
+    { elementType: "labels.text.fill", stylers: [{ color: "#333333" }] },
+    { elementType: "labels.text.stroke", stylers: [{ color: "#ffffff" }] },
+    {
+      featureType: "water",
+      elementType: "geometry",
+      stylers: [{ color: "#b3e5fc" }]
+    },
+    {
+      featureType: "road",
+      elementType: "geometry",
+      stylers: [{ color: "#ffc1e3" }]
+    },
+    {
+      featureType: "landscape",
+      elementType: "geometry",
+      stylers: [{ color: "#e1bee7" }]
+    },
+    {
+      featureType: "poi",
+      elementType: "geometry",
+      stylers: [{ color: "#f8bbd0" }]
+    },
+  ];
+  
   useEffect(() => {
     const fetchWeather = async () => {
       try {
@@ -95,12 +120,21 @@ const App = () => {
         </Autocomplete>
         <button onClick={fetchDirections}>Get Route</button>
       </div>
-      <GoogleMap mapContainerClassName="map-container" center={{ lat: 43.0731, lng: -89.4012 }} zoom={12}>
-        {startLocation && <Marker position={startLocation} />}
-        {destination && <Marker position={destination} />}
-        {directions && <DirectionsRenderer directions={directions} />}
-        <CrimeMap startLocation={startLocation} destination={destination} />
-      </GoogleMap>
+      <GoogleMap
+  mapContainerClassName="map-container"
+  center={{ lat: 43.0731, lng: -89.4012 }}
+  zoom={12}
+  options={{
+    styles: pastelMapStyle, // Apply pastel theme
+    disableDefaultUI: true, // Hides UI elements for a cleaner look
+    zoomControl: true, // Enables zoom controls
+  }}
+>
+  {startLocation && <Marker position={startLocation} />}
+  {destination && <Marker position={destination} />}
+  {directions && <DirectionsRenderer directions={directions} />}
+  <CrimeMap startLocation={startLocation} destination={destination} />
+</GoogleMap>
     </LoadScript>
   );
 };
