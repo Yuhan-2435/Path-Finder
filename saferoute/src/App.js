@@ -6,7 +6,7 @@ import CrimeMap from './components/CrimeMap';
 
 const WEATHER_API_URL = "https://api.weather.gov/points/43.0731,-89.4012";
 const GOOGLE_MAPS_API_KEY = 'AIzaSyDni3sJh5FsQqwXEduYDypt7swK5YQq8SA';
-const FLASK_API_URL = "http://127.0.0.1:5000/api/data";
+//const FLASK_API_URL = "http://127.0.0.1:5000/api/data";
 
 const mapStyles = {
   pastel: [
